@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart Route Ambulance System</title>
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700display=swap" rel="stylesheet">
+
+    <!-- Your custom styles -->
+    <link rel="stylesheet" href="/static/style.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+</head>
+
+<body class="bg-dark">
+
+    <!-- 🔹 Nearest Hospital -->
+    <div class="nearest-hospital-box">
+        <h3><i class="bi bi-hospital"></i> Nearest Hospital </h3>
+
+        <label for="auto-ambulance"><i class="bi bi-geo-alt"></i> Ambulance Location:</label>
+        <input type="text" id="auto-ambulance" placeholder="Enter or auto-detect">
+
+        <!-- NEW AUTO LOCATION BUTTON -->
+        <button id="get-current-location" class="btn btn-warning btn-sm mt-2 w-100">
+            <i class="bi bi-crosshair"></i> Use My Current Location
+        </button>
+
+        <button id="find-nearest" class="btn btn-success btn-sm mt-2 w-100">
+            <i class="bi bi-geo-alt-fill"></i> Find Nearest Hospital
+        </button>
+
+        <div id="nearest-result" class="mt-3">
+            <p><strong>Result:</strong></p>
+            <ul id="hospital-list"></ul>
+        </div>
+    </div>
+
+    <!-- END Nearest Hospital -->
+
+    <div class="container">
+        <h1><i class="bi bi-truck-front"></i> Smart Route Ambulance System</h1>
+
+        {% if best_hospital %}
+        <div class="result-box">
+            <strong><i class="bi bi-check-circle-fill text-success"></i> Best Route:</strong> {{ best_hospital }} (ETA: {{ best_eta }} minutes)
+        </div>
+
+        <div class="mt-3">
+            <a href="/download-report?hospital_name={{ best_hospital }}&eta={{ best_eta }}+minutes&distance={{ coordinates.destinations[best_index][0] if coordinates and best_index >= 0 else 'N/A' }}&route=Auto+Calculated"
+                class="btn btn-danger" target="_blank">
+                <i class="bi bi-download"></i> Download Report (PDF)
+            </a>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- 🔹 Route Finder -->
+        <form method="post" action="/get_best_route" id="routeForm">
+            <label for="origin"><i class="bi bi-truck"></i> Ambulance Location:</label>
+            <input type="text" id="origin" name="origin" required value="{{ origin if origin else '' }}">
+
+            <div id="hospitalInputs">
+                {% if hospitals %}
+                    {% for hospital in hospitals %}
+                        <input type="text" name="hospitals" required value="{{ hospital }}">
+                    {% endfor %}
+                {% else %}
+                    <input type="text" name="hospitals" required placeholder="Enter Hospital e.g Agha Khan Hospital">
+                {% endif %}
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="addHospitalInput()">
+                <i class="bi bi-plus-circle"></i> Add Hospital
+            </button>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-geo-fill"></i> Find Best Route
+            </button>
+        </form>
+
+        <div id="map"></div>
+
+        {% if results %}
+        <h2><i class="bi bi-list-check"></i> All Hospital Routes</h2>
+        <ul>
+            {% for hospital, result in results %}
+                <li>{{ hospital }} - {{ result }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- 🔹 PATIENT FORM -->
+        <div class="patient-form mt-5 p-4 border rounded bg-white shadow-sm">
+            <h3 class="text-danger mb-3"><i class="bi bi-person-vcard"></i> Patient Details</h3>
+            <form id="patientForm">
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark"><i class="bi bi-person"></i> Name:</label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark"><i class="bi bi-calendar-heart"></i> Age:</label>
+                    <div class="input-group">
+                        <button type="button" class="btn btn-danger" onclick="changeAge(-1)">−</button>
+                        <input type="number" id="age" name="age" class="form-control text-center" required min="0" value="0">
+                        <button type="button" class="btn btn-danger" onclick="changeAge(1)">+</button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="condition" class="form-label fw-bold text-dark"><i class="bi bi-heart-pulse"></i> Condition:</label>
+                    <textarea id="condition" name="condition" class="form-control" rows="4" required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark"><i class="bi bi-hospital"></i> Assign Hospital:</label>
+                    <input type="text" id="hospital_name" name="hospital_name" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-danger w-100 fw-bold">
+                    <i class="bi bi-save"></i> Save Patient Details
+                </button>
+            </form>
+
+            <div id="patientMessage" class="mt-3"></div>
+        </div>
+
+        <!-- 🔹 Search Hospitals by Disease -->
+        <div class="disease-search mt-5 p-3 border rounded bg-light">
+            <h3><i class="bi bi-search"></i> Search Hospitals by Disease</h3>
+            <input type="text" id="diseaseInput" class="form-control" placeholder="Enter disease (e.g., heart, skin)">
+            <button id="searchDiseaseBtn" class="btn btn-primary w-100 mt-2">
+                <i class="bi bi-search"></i> Search
+            </button>
+            <div id="diseaseResult" class="mt-3"></div>
+        </div>
+
+        <!-- 🔹 AI Hospital Recommendation -->
+        <div class="ai-recommend mt-5 p-3 border rounded bg-light">
+            <h3><i class="bi bi-robot"></i> AI Hospital Recommendation</h3>
+
+            <form id="aiForm">
+                <div class="mb-2">
+                    <label><i class="bi bi-person"></i> Patient Name:</label>
+                    <input type="text" id="ai_name" name="name" class="form-control" required>
+                </div>
+
+                <div class="mb-2">
+                    <label><i class="bi bi-calendar-heart"></i> Age:</label>
+                    <input type="number" id="ai_age" name="age" class="form-control" required min="0">
+                </div>
+
+                <div class="mb-2">
+                    <label><i class="bi bi-virus"></i> Disease:</label>
+                    <input type="text" id="ai_disease" name="disease" class="form-control" required>
+                </div>
+
+                <div class="mb-2">
+                    <label><i class="bi bi-heart-pulse"></i> Condition:</label>
+                    <input type="text" id="ai_condition" name="condition" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100">
+                    <i class="bi bi-lightbulb"></i> Get Recommendation
+                </button>
+            </form>
+
+            <div id="aiResult" class="mt-3"></div>
+        </div>
+
+        <!-- 🔹 Live Ambulance Tracking -->
+        <div class="live-tracking mt-5 p-3 border rounded bg-light">
+            <h3><i class="bi bi-geo-alt"></i> Live Ambulance Tracking</h3>
+            <div id="ambulanceMap" style="height: 400px;"></div>
+            <div id="ambulanceStatus" class="mt-2 text-muted">Waiting for location...</div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <script>
+        const geoData = {
+            origin: {{ coordinates.origin | tojson if coordinates and coordinates.origin else "null" }},
+            destinations: {{ coordinates.destinations | tojson if coordinates and coordinates.destinations else "[]" }},
+            geometries: {{ geometries | tojson if geometries else "[]" }},
+            best_index: {{ best_index if best_index is not none else -1 }}
+        };
+    </script>
+
+    <script src="/static/script.js"></script>
+
+    <!-- 🔹 Nearest Hospital Script -->
+    <script>
+
+    /* ------------------------------
+       📌 AUTO-DETECT GPS LOCATION
+       ------------------------------ */
+    document.getElementById("get-current-location").addEventListener("click", () => {
+        if (!navigator.geolocation) {
+            alert("Your browser does not support location access!");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+
+            document.getElementById("auto-ambulance").value = `${lat},${lon}`;
+
+            try {
+                const resp = await fetch(`/nearest_hospitals?lat=${lat}&lon=${lon}`);
+                const payload = await resp.json();
+                const list = document.getElementById("hospital-list");
+                list.innerHTML = "";
+
+                const hospitals = payload.hospitals || [];
+
+                if (hospitals.length === 0) {
+                    list.innerHTML = "<li>No hospitals found nearby.</li>";
+                    return;
+                }
+
+                // show only 3 nearest
+                hospitals.slice(0, 3).forEach(h => {
+                    const li = document.createElement("li");
+                    li.textContent = `${h.name} (${h.distance_km} km)`;
+                    list.appendChild(li);
+                });
+
+            } catch (error) {
+                console.error(error);
+                alert("Error fetching hospitals using GPS");
+            }
+
+        }, () => {
+            alert("Location access denied.");
+        });
+    });
+
+    /* ------------------------------
+       📌 MANUAL SEARCH NEAREST
+       ------------------------------ */
+    document.getElementById("find-nearest").addEventListener("click", async () => {
+        const query = document.getElementById("auto-ambulance").value.trim();
+        const list = document.getElementById("hospital-list");
+        list.innerHTML = "";
+
+        if (!query) {
+            alert("Please enter a location");
+            return;
+        }
+
+        try {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+            const geoData = await geoRes.json();
+
+            if (geoData.length === 0) {
+                alert("Invalid location");
+                return;
+            }
+
+            const lat = geoData[0].lat;
+            const lon = geoData[0].lon;
+
+            const resp = await fetch(`/nearest_hospitals?lat=${lat}&lon=${lon}`);
+            const payload = await resp.json();
+
+            const hospitals = payload.hospitals || [];
+
+            if (hospitals.length === 0) {
+                list.innerHTML = "<li>No hospitals found nearby.</li>";
+                return;
+            }
+
+            hospitals.slice(0, 3).forEach(h => {
+                let li = document.createElement("li");
+                li.textContent = `${h.name} (${h.distance_km} km)`;
+                list.appendChild(li);
+            });
+
+        } catch (err) {
+            console.error(err);
+            alert("Error finding nearest hospital.");
+        }
+    });
+
+    /* ------------------------------
+       📌 PATIENT FORM SUBMIT
+       ------------------------------ */
+    document.getElementById("patientForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const resp = await fetch("/add_patient", { method: "POST", body: formData });
+        const msgBox = document.getElementById("patientMessage");
+
+        let result = await resp.json();
+        msgBox.innerHTML = result.status === "success"
+            ? `<div class="alert alert-success">${result.message}</div>`
+            : `<div class="alert alert-danger">${result.message}</div>`;
+    });
+
+    /* ------------------------------
+       📌 AI RECOMMENDATION
+       ------------------------------ */
+    document.getElementById("aiForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const resp = await fetch("/recommend_hospital", { method: "POST", body: formData });
+
+        let data = await resp.json();
+        document.getElementById("aiResult").innerHTML =
+            data.status === "success"
+            ? `<div class="alert alert-info"><strong>Recommended:</strong> 🏥 ${data.recommended_hospital}</div>`
+            : `<div class="alert alert-danger">${data.message}</div>`;
+    });
+
+    /* ------------------------------
+       📌 Age Button
+       ------------------------------ */
+    function changeAge(val) {
+        let ageInput = document.getElementById("age");
+        let newAge = parseInt(ageInput.value || 0) + val;
+        ageInput.value = Math.max(0, newAge);
+    }
+
+    /* ------------------------------
+       📌 Search Hospitals by Disease
+       ------------------------------ */
+    document.getElementById("searchDiseaseBtn").addEventListener("click", async () => {
+        const disease = document.getElementById("diseaseInput").value.trim();
+        const resultBox = document.getElementById("diseaseResult");
+
+        if (!disease) {
+            alert("Please enter a disease");
+            return;
+        }
+
+        const resp = await fetch(`/get_hospitals_by_disease?disease=${encodeURIComponent(disease)}`);
+        const data = await resp.json();
+
+        if (data.status === "success" && data.hospitals.length) {
+            resultBox.innerHTML = "<ul class='list-group'>" +
+                data.hospitals.map(h => `<li class='list-group-item'>🏥 ${h}</li>`).join("") +
+                "</ul>";
+        } else {
+            resultBox.innerHTML = "<div class='alert alert-warning'>No matching hospitals.</div>";
+        }
+    });
+
+    /* ------------------------------
+       📌 Live Ambulance Tracking
+       ------------------------------ */
+    let ambMap = L.map("ambulanceMap").setView([24.8607, 67.0011], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(ambMap);
+
+    let ambMarker = L.marker([24.8607, 67.0011]).addTo(ambMap)
+        .bindPopup("🚑 Ambulance Location").openPopup();
+
+    async function updateAmbulanceLocation() {
+        const res = await fetch("/update_ambulance");
+        const data = await res.json();
+
+        if (data.lat && data.lon) {
+            ambMarker.setLatLng([data.lat, data.lon]);
+            ambMap.setView([data.lat, data.lon], 14);
+
+            document.getElementById("ambulanceStatus").textContent =
+                `Live Location: ${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}`;
+        }
+    }
+
+    setInterval(updateAmbulanceLocation, 5000);
+
+    </script>
+
+</body>
+</html>
