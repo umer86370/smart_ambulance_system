@@ -1,0 +1,247 @@
+/* 🌑 DARK THEME VARIABLES */
+:root {
+  --primary-bg: #000000;
+  --secondary-bg: #000000;
+  --accent-color: #d62828;       /* Professional crimson */
+  --secondary-accent: #2979ff;   /* Refined blue */
+  --text-color: #4bbb17;
+  --light-text: #b0bec5;
+  --heading-font: 'Poppins', sans-serif;
+  --body-font: 'Inter', sans-serif;
+  --box-shadow: 0 4px 14px rgb(190, 0, 0);
+  --border-radius: 10px;
+  --transition: all 0.3s ease;
+
+  /* 🎨 Patient Form Customizable Colors */
+  --patient-form-bg: rgb(0, 0, 0);
+  --label-text-color: #ff4d4d;
+  --label-bg-color: transparent;
+  --input-bg: rgb(255, 255, 255);
+  --input-border: rgb(0, 0, 0);
+  --button-bg: var(--accent-color);
+  --button-hover: var(--secondary-accent);
+}
+
+/* 🌐 BASE */
+body {
+  background: linear-gradient(160deg, #0f0f0f 0%, #1a1a1a 100%);
+  font-family: var(--body-font);
+  color: var(--text-color);
+  line-height: 1.7;
+  padding: 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 25px auto;
+  padding: 28px;
+  background: var(--secondary-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 📌 HEADINGS */
+h1 {
+  text-align: center;
+  font-family: var(--heading-font);
+  color: var(--accent-color);
+  margin-bottom: 25px;
+  font-weight: 700;
+  font-size: 2.2rem;
+  letter-spacing: 0.5px;
+}
+
+h3 {
+  color: var(--secondary-accent);
+  font-family: var(--heading-font);
+  margin-bottom: 12px;
+  font-weight: 600;
+  border-left: 3px solid var(--accent-color);
+  padding-left: 10px;
+}
+
+/* 📝 FORM ELEMENTS */
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--input-border);
+  font-size: 15px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  transition: var(--transition);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #888;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--secondary-accent);
+  outline: none;
+  box-shadow: 0 0 10px rgba(41, 121, 255, 0.4);
+}
+
+/* 📊 RESULT BOX */
+.result-box {
+  background: linear-gradient(145deg, #141414, #202020);
+  border-left: 4px solid var(--secondary-accent);
+  padding: 16px;
+  margin-bottom: 18px;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: var(--transition);
+}
+.result-box:hover {
+  background: rgba(41, 121, 255, 0.08);
+  transform: translateY(-2px);
+}
+.result-box i {
+  color: var(--secondary-accent);
+  font-size: 20px;
+}
+
+/* 🏥 NEAREST HOSPITAL BOX */
+.nearest-hospital-box {
+  background: rgba(25, 25, 25, 0.95);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: var(--box-shadow);
+  margin-top: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+.nearest-hospital-box h3 {
+  margin-bottom: 12px;
+  color: var(--accent-color);
+}
+
+/* 👤 PATIENT FORM */
+.patient-form {
+  background: var(--patient-form-bg);
+  box-shadow: var(--box-shadow);
+  padding: 22px;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.patient-form h3 {
+  text-align: center;
+  margin-bottom: 18px;
+  color: var(--accent-color);
+}
+
+.patient-form .form-label {
+  font-weight: bold;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 5px;
+  color: var(--label-text-color);
+  background: var(--label-bg-color);
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.patient-form input,
+.patient-form textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+}
+.patient-form button {
+  background: var(--button-bg);
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+.patient-form button:hover {
+  background: var(--button-hover);
+  transform: translateY(-2px);
+}
+
+/* 🔘 BUTTONS */
+.btn {
+  display: inline-block;
+  padding: 11px 22px;
+  background: var(--button-bg);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--heading-font);
+}
+.btn:hover {
+  background: var(--button-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(41, 121, 255, 0.4);
+}
+
+.btn-secondary {
+  background: var(--secondary-accent);
+}
+.btn-secondary:hover {
+  background: #1a5fd0;
+  box-shadow: 0 6px 14px rgba(26, 95, 208, 0.4);
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 10px;
+}
+
+
+
+/* 🗺 MAP (BEST ROUTE ALWAYS VISIBLE) */
+#map {
+  height: 500px !important;
+  width: 100% !important;
+  margin-top: 20px;
+  border: 1px solid var(--secondary-accent);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  display: block !important;
+  z-index: 1000;
+}
+
+#ambulanceMap {
+  height: 450px !important;
+  width: 100% !important;
+  margin-top: 20px;
+  border: 1px solid var(--secondary-accent);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+/* 📱 RESPONSIVE */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+    margin: 10px;
+  }
+  #map {
+    height: 350px !important;
+  }
+  #ambulanceMap {
+    height: 320px !important;
+  }
+  h1 {
+    font-size: 1.8rem;
+  }
+  .btn {
+    padding: 9px 16px;
+    font-size: 14px;
+  }
+}
